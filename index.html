@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT 게이밍 학습 포털 - 풀스크린 랭킹전</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- 여기에 분리한 CSS 파일을 연결했습니다! -->
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+    <header>
+        <h1>⚡ IT 5초 랭킹 퀘스트</h1>
+        <div id="userBadge" class="user-profile-badge" style="display: none;">
+            <span id="userEmoji" style="font-size: 24px;">🐭</span>
+            <span id="userName">플레이어</span>
+        </div>
+    </header>
+
+    <div class="app-container">
+
+        <!-- 0. 12지신 캐릭터 생성 화면 -->
+        <div id="charView" class="view-section active">
+            <div class="character-creator">
+                <h2 style="font-size: 26px; color: var(--primary-dark); margin-bottom: 8px;">🎭 내 캐릭터 만들기</h2>
+                <p style="color: var(--text-sub); font-size: 15px;">본인의 띠 캐릭터를 선택하고 닉네임을 입력하세요!</p>
+                
+                <input type="text" id="nicknameInput" class="nickname-input" placeholder="닉네임 입력 (최대 6자)" maxlength="6" value="스피드왕">
+
+                <div class="zodiac-grid" id="zodiacGrid"></div>
+
+                <button class="btn btn-primary" style="font-size: 18px; padding: 14px 45px;" onclick="saveCharacter()">모험 시작하기 ➔</button>
+            </div>
+        </div>
+
+        <!-- 1. 메인 화면 & 랭킹 리더보드 -->
+        <div id="mainView" class="view-section">
+            <div class="ranking-box">
+                <div class="ranking-title">
+                    <span>🏆 명예의 전당 (Top 5 랭킹)</span>
+                    <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;" onclick="resetLeaderboard()">랭킹 초기화</button>
+                </div>
+                <ul id="rankingList" class="ranking-list">
+                    <!-- JS 동적 생성 -->
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="showView('charView')">⚙️ 캐릭터 변경</button>
+            </div>
+
+            <div class="category-grid">
+                <div class="category-card linux">
+                    <div class="card-icon">💻</div>
+                    <h3>리눅스 (Linux)</h3>
+                    <p style="font-size:14px; color:var(--text-sub);">5초 랭킹 타임어택</p>
+                    <div class="count-selector">
+                        <button class="count-btn" onclick="startQuiz('linux', 5)">5문제</button>
+                        <button class="count-btn" onclick="startQuiz('linux', 10)">10문제</button>
+                    </div>
+                </div>
+                <div class="category-card python">
+                    <div class="card-icon">🐍</div>
+                    <h3>파이썬 (Python)</h3>
+                    <p style="font-size:14px; color:var(--text-sub);">5초 랭킹 타임어택</p>
+                    <div class="count-selector">
+                        <button class="count-btn" onclick="startQuiz('python', 5)">5문제</button>
+                        <button class="count-btn" onclick="startQuiz('python', 10)">10문제</button>
+                    </div>
+                </div>
+                <div class="category-card html">
+                    <div class="card-icon">🌐</div>
+                    <h3>HTML / Web</h3>
+                    <p style="font-size:14px; color:var(--text-sub);">5초 랭킹 타임어택</p>
+                    <div class="count-selector">
+                        <button class="count-btn" onclick="startQuiz('html', 5)">5문제</button>
+                        <button class="count-btn" onclick="startQuiz('html', 10)">10문제</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. 퀴즈 진행 화면 -->
+        <div id="quizView" class="view-section">
+            <div class="quiz-panel">
+                <div class="quiz-header">
+                    <span id="quizBadge" class="badge linux">과목</span>
+                    <span id="quizProgress" class="progress-text">문제 1 / 10</span>
+                    <span id="timerTextDisplay" class="timer-text-display">5.0s</span>
+                </div>
+
+                <div class="timer-container">
+                    <div id="timerBar" class="timer-bar"></div>
+                </div>
+
+                <div id="quizQuestion" class="question-box">문제가 여기에 표시됩니다.</div>
+                <div id="quizOptions" class="options-list"></div>
+                <div id="quizExplanation" class="explanation-box"></div>
+
+                <div class="quiz-footer">
+                    <button class="btn btn-secondary" onclick="goHome()">메인으로</button>
+                    <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()" style="display: none;">다음 문제 (Enter) ➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. 결과 화면 -->
+        <div id="resultView" class="view-section">
+            <div class="quiz-panel">
+                <div class="result-summary">
+                    <div class="score-circle" id="scoreText">0 / 0</div>
+                    <div id="tierBadge" class="tier-badge">🏅 티어 정보</div>
+                    <h2 id="resultTitle" style="margin-top:12px;">스테이지 클리어! 🎉</h2>
+                    <p id="resultSub" style="color: var(--text-sub); margin-top: 6px;">당신의 순발력과 IT 실력이 검증되었습니다!</p>
+                </div>
+
+                <div style="font-size:19px; font-weight:700; color:#E11D48; margin-bottom:15px;">🚨 복습 오답 노트</div>
+                <div id="wrongList"></div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button id="homeBtn" class="btn btn-primary" onclick="goHome()">🏠 메인으로 돌아가기 (Enter)</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript 코드는 HTML 파일 하단에 그대로 두었습니다. -->
+    <script>
+        const zodiacs = [
+            { name: "자(쥐)", emoji: "🐭" }, { name: "축(소)", emoji: "🐮" },
+            { name: "인(호랑이)", emoji: "🐯" }, { name: "묘(토끼)", emoji: "🐰" },
+            { name: "진(용)", emoji: "🐲" }, { name: "사(뱀)", emoji: "🐍" },
+            { name: "오(말)", emoji: "🐴" }, { name: "미(양)", emoji: "🐑" },
+            { name: "신(원숭이)", emoji: "🐵" }, { name: "유(닭)", emoji: "🐔" },
+            { name: "술(개)", emoji: "🐶" }, { name: "해(돼지)", emoji: "🐷" }
+        ];
+
+        let selectedZodiac = zodiacs[0];
+        let userNickname = "스피드왕";
+        let totalTimeSaved = 0;
+
+        function initZodiacGrid() {
+            const grid = document.getElementById('zodiacGrid');
+            grid.innerHTML = '';
+            zodiacs.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = `zodiac-item ${idx === 0 ? 'selected' : ''}`;
+                div.innerHTML = `<span class="zodiac-emoji">${item.emoji}</span><span class="zodiac-name">${item.name}</span>`;
+                div.onclick = () => {
+                    document.querySelectorAll('.zodiac-item').forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedZodiac = item;
+                };
+                grid.appendChild(div);
+            });
+        }
+
+        function saveCharacter() {
+            const input = document.getElementById('nicknameInput').value.trim();
+            if (input) userNickname = input;
+
+            document.getElementById('userEmoji').innerText = selectedZodiac.emoji;
+            document.getElementById('userName').innerText = userNickname;
+            document.getElementById('userBadge').style.display = 'inline-flex';
+
+            triggerConfetti();
+            updateLeaderboardUI();
+            showView('mainView');
+        }
+
+        function triggerConfetti() {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        }
+
+        function getLeaderboard() {
+            const data = localStorage.getItem('it_quiz_leaderboard');
+            if (!data) {
+                return [
+                    { name: "빛의 쥐", emoji: "🐭", score: 10, totalSec: 3.2, rankScore: 1000 },
+                    { name: "타임 용", emoji: "🐲", score: 9, totalSec: 4.1, rankScore: 850 },
+                    { name: "번개 소", emoji: "🐮", score: 8, totalSec: 5.5, rankScore: 720 }
+                ];
+            }
+            return JSON.parse(data);
+        }
+
+        function saveScoreToLeaderboard(score, totalQuestions, savedSeconds) {
+            let leaderboard = getLeaderboard();
+            const calculatedScore = (score * 100) + Math.round(savedSeconds * 10);
+
+            leaderboard.push({
+                name: userNickname,
+                emoji: selectedZodiac.emoji,
+                score: score,
+                totalSec: savedSeconds.toFixed(1),
+                rankScore: calculatedScore
+            });
+
+            leaderboard.sort((a, b) => b.rankScore - a.rankScore);
+            leaderboard = leaderboard.slice(0, 5);
+
+            localStorage.setItem('it_quiz_leaderboard', JSON.stringify(leaderboard));
+            updateLeaderboardUI();
+        }
+
+        function updateLeaderboardUI() {
+            const listContainer = document.getElementById('rankingList');
+            const leaderboard = getLeaderboard();
+            listContainer.innerHTML = '';
+
+            leaderboard.forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.className = `ranking-item ${idx === 0 ? 'top1' : (idx === 1 ? 'top2' : (idx === 2 ? 'top3' : ''))}`;
+                li.innerHTML = `
+                    <span>${idx + 1}위 ${item.emoji} <b>${item.name}</b></span>
+                    <span>${item.score}점 (${item.rankScore} PTS / +${item.totalSec}s)</span>
+                `;
+                listContainer.appendChild(li);
+            });
+        }
+
+        function resetLeaderboard() {
+            if (confirm("랭킹 기록을 초기화하시겠습니까?")) {
+                localStorage.removeItem('it_quiz_leaderboard');
+                updateLeaderboardUI();
+            }
+        }
+
+        const rawQuizData = {
+            linux: [
+                { id: 'l1', question: "현재 작업 디렉토리의 절대 경로를 출력하는 명령어는?", options: ["ls", "pwd", "cd", "mkdir"], answer: 1, exp: "pwd는 현재 절대 경로를 보여줍니다." },
+                { id: 'l2', question: "파일/디렉토리의 접근 권한을 변경하는 명령어는?", options: ["chown", "chmod", "chgrp", "touch"], answer: 1, exp: "chmod는 권한(rwx)을 변경합니다." },
+                { id: 'l3', question: "빈 파일을 생성하거나 타임스탬프를 갱신하는 명령어는?", options: ["touch", "cat", "rm", "cp"], answer: 0, exp: "touch는 빈 파일을 신규 생성합니다." },
+                { id: 'l4', question: "실시간 프로세스 모니터링 명령어는?", options: ["top", "ps", "df", "free"], answer: 0, exp: "top은 자원 사용량을 실시간 표시합니다." },
+                { id: 'l5', question: "최상위 루트 디렉토리 기호는?", options: ["~", ".", "..", "/"], answer: 3, exp: "/는 최상위 루트 디렉토리입니다." },
+                { id: 'l6', question: "디렉토리를 생성할 때 사용하는 명령어는?", options: ["rmdir", "mkdir", "mv", "cp"], answer: 1, exp: "mkdir은 새 디렉토리를 생성합니다." },
+                { id: 'l7', question: "파일 내용을 화면에 출력할 때 사용하는 기본 명령어는?", options: ["cat", "find", "grep", "echo"], answer: 0, exp: "cat 명령어로 파일의 전체 내용을 확인할 수 있습니다." },
+                { id: 'l8', question: "파일이나 디렉토리를 이동하거나 이름을 변경할 때 쓰는 명령어는?", options: ["cp", "mv", "ln", "rm"], answer: 1, exp: "mv는 이동과 이름 변경(Rename) 역할을 수행합니다." },
+                { id: 'l9', question: "특정 패턴의 문자열을 파일에서 검색할 때 쓰는 명령어는?", options: ["grep", "find", "locate", "sed"], answer: 0, exp: "grep은 텍스트 패턴 검색 명령어입니다." },
+                { id: 'l10', question: "파일이나 디렉토리의 소유자를 변경하는 명령어는?", options: ["chmod", "chown", "chgrp", "sudo"], answer: 1, exp: "chown은 파일 소유자를 변경합니다." }
+            ],
+            python: [
+                { id: 'p1', question: "리스트 끝에 원소를 추가하는 메서드는?", options: ["add()", "push()", "append()", "extend()"], answer: 2, exp: "append()는 리스트 끝에 항목을 추가합니다." },
+                { id: 'p2', question: "변경 불가능한(Immutable) 파이썬 자료형은?", options: ["List", "Dictionary", "Tuple", "Set"], answer: 2, exp: "Tuple은 생성 후 요소 변경이 불가능합니다." },
+                { id: 'p3', question: "문자열 '100'을 정수로 바꾸는 함수는?", options: ["str()", "int()", "float()", "bool()"], answer: 1, exp: "int()는 정수 타입으로 변환합니다." },
+                { id: 'p4', question: "파이썬에서 화면에 결과를 출력할 때 사용되는 함수는?", options: ["input()", "print()", "write()", "output()"], answer: 1, exp: "print()를 통해 터미널에 메시지를 출력합니다." },
+                { id: 'p5', question: "키(Key)와 값(Value) 쌍으로 데이터를 저장하는 자료형은?", options: ["List", "Tuple", "Dictionary", "Set"], answer: 2, exp: "Dictionary는 Key-Value 구조로 저장합니다." },
+                { id: 'p6', question: "파이썬에서 함수를 정의할 때 사용하는 키워드는?", options: ["func", "function", "def", "define"], answer: 2, exp: "def 키워드로 함수를 정의합니다." },
+                { id: 'p7', question: "리스트의 길이를 반환하는 파이썬 내장 함수는?", options: ["length()", "size()", "count()", "len()"], answer: 3, exp: "len()은 요소의 개수를 반환합니다." },
+                { id: 'p8', question: "나머지를 구하는 파이썬의 산술 연산자는?", options: ["/", "//", "%", "**"], answer: 2, exp: "% 연산자는 나눗셈의 나머지를 구합니다." },
+                { id: 'p9', question: "파이썬에서 주석을 작성할 때 사용하는 기호는?", options: ["//", "/* */", "#", "--"], answer: 2, exp: "# 뒤에 작성한 문문을 주석 처리됩니다." },
+                { id: 'p10', question: "조건문의 시각을 넓히는 파이썬의 'else if' 축약 키워드는?", options: ["elseif", "elsif", "elif", "else if"], answer: 2, exp: "파이썬에서는 elif 키워드를 사용합니다." }
+            ],
+            html: [
+                { id: 'h1', question: "하이퍼링크를 만드는 태그는?", options: ["<link>", "<a>", "<href>", "<script>"], answer: 1, exp: "<a> 태그는 링크를 생성합니다." },
+                { id: 'h2', question: "최상위 제목 태그는?", options: ["<head>", "<h6>", "<title>", "<h1>"], answer: 3, exp: "<h1>이 가장 우선순위가 높고 큰 제목입니다." },
+                { id: 'h3', question: "이미지를 삽입할 때 사용하는 태그는?", options: ["<img>", "<image>", "<picture>", "<src>"], answer: 0, exp: "<img> 태그로 이미지를 연결하여 출력합니다." },
+                { id: 'h4', question: "순서가 없는 목록(Bullet Point)을 만드는 태그는?", options: ["<ol>", "<ul>", "<li>", "<dl>"], answer: 1, exp: "<ul>은 순서 없는 목록을 만듭니다." },
+                { id: 'h5', question: "줄바꿈(Line Break)을 수행하는 태그는?", options: ["<p>", "<br>", "<hr>", "<line>"], answer: 1, exp: "<br> 태그는 닫는 태그 없이 줄바꿈을 처리합니다." },
+                { id: 'h6', question: "표(Table)에서 하나의 행(Row)을 생성하는 태그는?", options: ["<td>", "<th>", "<tr>", "<table>"], answer: 2, exp: "<tr>은 표 내부의 하나의 행을 뜻합니다." },
+                { id: 'h7', question: "사용자로부터 입력을 받는 폼 엘리먼트 태그는?", options: ["<form>", "<input>", "<button>", "<select>"], answer: 1, exp: "<input> 태그로 텍스트, 체크박스 등 입력을 처리합니다." },
+                { id: 'h8', question: "HTML 문서의 메타데이터 및 제목 정보를 담는 구역은?", options: ["<body>", "<head>", "<header>", "<main>"], answer: 1, exp: "<head> 구역에는 화면에 직접 노출되지 않는 설정이 들어갑니다." },
+                { id: 'h9', question: "외부 자바스크립트 파일(.js)을 불러오는 태그는?", options: ["<style>", "<script>", "<js>", "<code >"], answer: 1, exp: "<script> 태그로 스크립트를 연결합니다." },
+                { id: 'h10', question: "텍스트를 굵게 강조(Strong importance)하는 태그는?", options: ["<b>", "<i>", "<strong>", "<em>"], answer: 2, exp: "<strong> 태그는 의미적으로 강한 강조 효과를 줍니다." }
+            ]
+        };
+
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let userAnswers = [];
+
+        const QUESTION_LIMIT_SEC = 5;
+        let timeLeft = QUESTION_LIMIT_SEC;
+        let timerInterval = null;
+
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function goHome() {
+            stopTimer();
+            document.body.classList.remove('urgent-mode');
+            updateLeaderboardUI();
+            showView('mainView');
+        }
+
+        function startQuiz(subject, questionCount) {
+            let basePool = [...rawQuizData[subject]];
+            
+            basePool.sort(() => Math.random() - 0.5);
+            currentQuestions = basePool.slice(0, Math.min(questionCount, basePool.length));
+
+            currentIndex = 0;
+            userAnswers = [];
+            totalTimeSaved = 0;
+
+            const badge = document.getElementById('quizBadge');
+            badge.className = 'badge ' + subject;
+            badge.innerText = subject === 'linux' ? '💻 리눅스' : (subject === 'python' ? '🐍 파이썬' : '🌐 HTML');
+
+            showView('quizView');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const qData = currentQuestions[currentIndex];
+            document.getElementById('quizProgress').innerText = `문제 ${currentIndex + 1} / ${currentQuestions.length}`;
+            document.getElementById('quizQuestion').innerText = `Q${currentIndex + 1}. ${qData.question}`;
+
+            const optionsContainer = document.getElementById('quizOptions');
+            optionsContainer.innerHTML = '';
+
+            document.getElementById('quizExplanation').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'none';
+
+            qData.options.forEach((opt, idx) => {
+                const optBtn = document.createElement('button');
+                optBtn.className = 'option-item';
+                optBtn.innerText = `${idx + 1}. ${opt}`;
+                optBtn.onclick = () => selectOption(idx);
+                optionsContainer.appendChild(optBtn);
+            });
+
+            startTimer();
+        }
+
+        function startTimer() {
+            stopTimer();
+            timeLeft = QUESTION_LIMIT_SEC;
+            document.body.classList.remove('urgent-mode');
+
+            const timerBar = document.getElementById('timerBar');
+            const timerText = document.getElementById('timerTextDisplay');
+
+            timerBar.style.width = '100%';
+            timerBar.style.backgroundColor = '#3B82F6';
+            timerText.innerText = `${timeLeft.toFixed(1)}s`;
+
+            const stepMs = 50;
+            timerInterval = setInterval(() => {
+                timeLeft -= stepMs / 1000;
+
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    stopTimer();
+                    handleTimeout();
+                }
+
+                const percent = (timeLeft / QUESTION_LIMIT_SEC) * 100;
+                timerBar.style.width = `${percent}%`;
+                timerText.innerText = `${timeLeft.toFixed(1)}s`;
+
+                if (timeLeft <= 1.5) {
+                    timerBar.style.backgroundColor = '#EF4444';
+                    document.body.classList.add('urgent-mode');
+                } else if (timeLeft <= 3.0) {
+                    timerBar.style.backgroundColor = '#F59E0B';
+                }
+            }, stepMs);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            document.body.classList.remove('urgent-mode');
+        }
+
+        function handleTimeout() {
+            const qData = currentQuestions[currentIndex];
+            const optionBtns = document.querySelectorAll('.option-item');
+            optionBtns.forEach(btn => btn.style.pointerEvents = 'none');
+
+            optionBtns[qData.answer].classList.add('selected-correct');
+
+            const expBox = document.getElementById('quizExplanation');
+            expBox.innerHTML = `<b>⏰ 타임아웃! 5초가 초과되었습니다.</b><br><br>💡 ${qData.exp}`;
+            expBox.style.display = 'block';
+
+            userAnswers.push({
+                question: qData.question,
+                options: qData.options,
+                userAns: -1,
+                correctAns: qData.answer,
+                exp: qData.exp,
+                isCorrect: false
+            });
+
+            showNextButton();
+        }
+
+        function selectOption(selectedIndex) {
+            if (userAnswers.length > currentIndex) return;
+            stopTimer();
+
+            totalTimeSaved += timeLeft;
+
+            const qData = currentQuestions[currentIndex];
+            const optionBtns = document.querySelectorAll('.option-item');
+            optionBtns.forEach(btn => btn.style.pointerEvents = 'none');
+
+            const isCorrect = selectedIndex === qData.answer;
+
+            if (isCorrect) {
+                optionBtns[selectedIndex].classList.add('selected-correct');
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+            } else {
+                optionBtns[selectedIndex].classList.add('selected-wrong');
+                optionBtns[qData.answer].classList.add('selected-correct');
+            }
+
+            const expBox = document.getElementById('quizExplanation');
+            expBox.innerHTML = `<b>${isCorrect ? "🎯 정답입니다!" : "💥 틀렸습니다!"}</b><br><br>💡 ${qData.exp}`;
+            expBox.style.display = 'block';
+
+            userAnswers.push({
+                question: qData.question,
+                options: qData.options,
+                userAns: selectedIndex,
+                correctAns: qData.answer,
+                exp: qData.exp,
+                isCorrect: isCorrect
+            });
+
+            showNextButton();
+        }
+
+        function showNextButton() {
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.innerText = (currentIndex === currentQuestions.length - 1) ? "결과 보기 (Enter) ➔" : "다음 문제 (Enter) ➔";
+            nextBtn.style.display = 'block';
+            nextBtn.focus();
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < currentQuestions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            stopTimer();
+            showView('resultView');
+            const total = userAnswers.length;
+            const correctCount = userAnswers.filter(a => a.isCorrect).length;
+
+            document.getElementById('scoreText').innerText = `${correctCount} / ${total}`;
+
+            saveScoreToLeaderboard(correctCount, total, totalTimeSaved);
+
+            const tierBadge = document.getElementById('tierBadge');
+            const ratio = correctCount / total;
+
+            if (ratio === 1) {
+                tierBadge.innerText = "👑 티어: [Challenger] 신의 손가락";
+                tierBadge.style.color = "#E11D48";
+            } else if (ratio >= 0.8) {
+                tierBadge.innerText = "💎 티어: [Diamond] 다이아몬드 지능";
+                tierBadge.style.color = "#2563EB";
+            } else if (ratio >= 0.5) {
+                tierBadge.innerText = "🥇 티어: [Gold] 훌륭한 순발력";
+                tierBadge.style.color = "#D97706";
+            } else {
+                tierBadge.innerText = "🥉 티어: [Bronze] 훈련 필요";
+                tierBadge.style.color = "#64748B";
+            }
+
+            const wrongList = document.getElementById('wrongList');
+            wrongList.innerHTML = '';
+            const wrongAnswers = userAnswers.filter(a => !a.isCorrect);
+
+            if (wrongAnswers.length === 0) {
+                wrongList.innerHTML = `<div style="text-align:center; color:#15803D; font-weight:800; padding:15px;">🏆 퍼펙트 클리어! 랭킹 상위권에 등극했습니다!</div>`;
+            } else {
+                wrongAnswers.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'wrong-card';
+                    const userChoiceText = item.userAns === -1 ? '<span style="color:#EF4444; font-weight:700;">⏱️ 시간 초과</span>' : `<span style="color:#EF4444; font-weight:700;">${item.options[item.userAns]}</span>`;
+                    
+                    card.innerHTML = `
+                        <h4 style="font-size:16px; margin-bottom:8px;">Q. ${item.question}</h4>
+                        <div style="font-size:14px; margin-bottom:4px;">내가 고른 답: ${userChoiceText}</div>
+                        <div style="font-size:14px; margin-bottom:8px;">정답: <span style="color:#22C55E; font-weight:700;">${item.options[item.correctAns]}</span></div>
+                        <div style="font-size:13px; color:#64748B; background:#FFF1F2; padding:10px; border-radius:8px;">💡 ${item.exp}</div>
+                    `;
+                    wrongList.appendChild(card);
+                });
+            }
+
+            document.getElementById('homeBtn').focus();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initZodiacGrid();
+            updateLeaderboardUI();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            const quizViewActive = document.getElementById('quizView').classList.contains('active');
+            const resultViewActive = document.getElementById('resultView').classList.contains('active');
+
+            if (quizViewActive) {
+                if (['1', '2', '3', '4'].includes(e.key)) {
+                    const index = parseInt(e.key) - 1;
+                    const optionBtns = document.querySelectorAll('.option-item');
+                    if (optionBtns[index] && userAnswers.length === currentIndex) {
+                        selectOption(index);
+                    }
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    const nextBtn = document.getElementById('nextBtn');
+                    if (nextBtn.style.display !== 'none') {
+                        e.preventDefault();
+                        nextQuestion();
+                    }
+                }
+            } else if (resultViewActive) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    goHome();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
